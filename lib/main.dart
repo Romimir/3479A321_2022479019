@@ -60,34 +60,16 @@ class PegSolitaireScreen extends StatelessWidget {
             // Convertir el índice en coordenadas matriciales 
             final int row = index ~/ gridSize; 
             final int col = index % gridSize; 
-             final CellType cellType = _getCellType(row, col); 
-            return Container( 
-              decoration: BoxDecoration( 
-                color: Colors.grey[400], 
-                border: Border.all(color: Colors.grey[600]!, width: 1.5), 
-              ), 
-              child: Center( 
-                child: cellType == CellType.occupiedPeg 
-                    ? Container( 
-                        width: 30, 
-                        height: 30, 
-                        decoration: const BoxDecoration( 
-                          color: Colors.blue, 
-                          shape: BoxShape.circle, 
-                        ), 
-                      ) 
-                    : cellType == CellType.emptyHole 
-                        ? Container( 
-                            width: 30, 
-                            height: 30, 
-                            decoration: const BoxDecoration( 
-                              color: Colors.white, 
-                              shape: BoxShape.circle, 
-                            ), 
-                          ) 
-                        : null, // No dibuja nada para voidCell 
-              ), 
-            ); 
+            final CellType cellType = _getCellType(row, col); 
+            
+            return PegCell(
+              row: row, 
+              col: col, 
+              type: cellType,
+              isSelected: false,
+              onTap: () {
+              },
+            );
           },  
          ), 
        ), 
@@ -121,6 +103,54 @@ class PegSolitaireScreen extends StatelessWidget {
       ), 
     ); 
   } 
+}
+
+class PegCell extends StatelessWidget {
+  final int row; 
+  final int col; 
+  final CellType type; 
+  final bool isSelected; 
+  final VoidCallback? onTap; 
+ 
+  const PegCell({ 
+    super.key, 
+    required this.row, 
+    required this.col, 
+    required this.type, 
+    this.isSelected = false, 
+    this.onTap, 
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container( 
+      decoration: BoxDecoration( 
+        color: Colors.grey[400], 
+        border: Border.all(color: Colors.grey[600]!, width: 1.5), 
+      ), 
+      child: Center( 
+        child: type == CellType.occupiedPeg 
+            ? Container( 
+                width: 30, 
+                height: 30, 
+                decoration: const BoxDecoration( 
+                  color: Colors.blue, 
+                  shape: BoxShape.circle, 
+                ), 
+              ) 
+            : type == CellType.emptyHole 
+                ? Container( 
+                    width: 30, 
+                    height: 30, 
+                    decoration: const BoxDecoration( 
+                      color: Colors.white, 
+                      shape: BoxShape.circle, 
+                    ), 
+                  ) 
+                : null, // No dibuja nada para voidCell 
+      ), 
+    );
+  }
 }
 
 
