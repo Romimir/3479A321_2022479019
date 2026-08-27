@@ -4,6 +4,12 @@ void main() {
   runApp(const MyApp());
 }
 
+enum CellType {
+  voidCell,   //Fuera de limites jugables (esquinas 2x2)
+  emptyHole,  //Casilla jugable desocupada
+  occupiedPeg, //Casilla jugable con clavija presente
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -20,6 +26,19 @@ class MyApp extends StatelessWidget {
 class PegSolitaireScreen extends StatelessWidget {
   const PegSolitaireScreen({Key? key}) : super(key: key);
 
+  static const int gridSize = 7;
+  static const int totalCells = gridSize * gridSize; //49 casillas
+
+  // Determina el tipo de celda según sus coordenadas matriciales (row, col) 
+  CellType _getCellType(int row, int col) { 
+    // Esquinas 2x2 no jugables en el tablero inglés estándar 
+    final bool isCorner = (row < 2 || row > 4) && (col < 2 || col > 4); 
+    if (isCorner) { 
+      return CellType.voidCell; 
+    } 
+    return CellType.occupiedPeg; // El resto de posiciones inician ocupadas
+  }
+
   @override 
 
   Widget _gameBoard() { 
@@ -34,22 +53,42 @@ class PegSolitaireScreen extends StatelessWidget {
              crossAxisCount: 7, // 7 columnas 
              crossAxisSpacing: 2.0, 
              mainAxisSpacing: 2.0, 
-           ), 
-           itemCount: 49, // 7x7 = 49 celdas 
-           itemBuilder: (context, index) { 
-             return Container( 
-               decoration: BoxDecoration( 
-                 color: Colors.grey[400], 
-                 border: Border.all(color: Colors.grey[600]!, width: 1.5), 
-               ), 
-               child: Center( 
-                child: Text( 
-                  '$index', // Muestra el índice de la celda 
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), 
-                ), 
-              )
-             ); 
-           }, 
+            ), 
+          itemCount: 49, // 7x7 = 49 celdas 
+           
+          itemBuilder: (context, index) { 
+            // Convertir el índice en coordenadas matriciales 
+            final int row = index ~/ gridSize; 
+            final int col = index % gridSize; 
+             final CellType cellType = _getCellType(row, col); 
+            return Container( 
+              decoration: BoxDecoration( 
+                color: Colors.grey[400], 
+                border: Border.all(color: Colors.grey[600]!, width: 1.5), 
+              ), 
+              child: Center( 
+                child: cellType == CellType.occupiedPeg 
+                    ? Container( 
+                        width: 30, 
+                        height: 30, 
+                        decoration: const BoxDecoration( 
+                          color: Colors.blue, 
+                          shape: BoxShape.circle, 
+                        ), 
+                      ) 
+                    : cellType == CellType.emptyHole 
+                        ? Container( 
+                            width: 30, 
+                            height: 30, 
+                            decoration: const BoxDecoration( 
+                              color: Colors.white, 
+                              shape: BoxShape.circle, 
+                            ), 
+                          ) 
+                        : null, // No dibuja nada para voidCell 
+              ), 
+            ); 
+          },  
          ), 
        ), 
      ), 
@@ -83,3 +122,5 @@ class PegSolitaireScreen extends StatelessWidget {
     ); 
   } 
 }
+
+
