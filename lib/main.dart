@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
+
+final logger = Logger();
 
 void main() {
+  logger.i("Logger funcionando");
   runApp(const MyApp());
 }
 
