@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'ui/screens/peg_solitare_screen.dart';
 import 'ui/theme/app_theme.dart';
+import 'ui/screens/menu_screen.dart';
+import 'ui/screens/rules_screen.dart';
 
 final logger = Logger();
 
@@ -17,8 +19,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Solitario Ingles',
-      theme: app_theme.lightTheme,
-      home: const PegSolitaireScreen(), // Apuntamos a nuestra nueva pantalla
+      theme: AppTheme.lightTheme,
+      initialRoute: '/', 
+     routes: { 
+       '/': (context) => const MenuScreen(), 
+       '/game': (context) => PegSolitaireScreen(), 
+       '/rules': (context) => const RulesScreen(), 
+     },
     );
   }
 }

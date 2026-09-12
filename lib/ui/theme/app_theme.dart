@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart'; 
  
-class app_theme { 
+class AppTheme { 
   static const Color primarySeed = Color.fromARGB(255, 100, 14, 96); // Un color de ejemplo. 
   static const Color boardBaseColor = Color.fromARGB(255, 42, 13, 56); 
   static const Color emptyHoleColor = Color.fromARGB(255, 77, 42, 112); 
