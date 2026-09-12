@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart'; 
  
 class AppTheme { 
-  static const Color primarySeed = Color.fromARGB(255, 100, 14, 96); // Un color de ejemplo. 
+  static const Color primarySeed = Color.fromARGB(255, 12, 31, 77); // Un color de ejemplo. 
   static const Color boardBaseColor = Color.fromARGB(255, 42, 13, 56); 
   static const Color emptyHoleColor = Color.fromARGB(255, 77, 42, 112); 
  
@@ -13,11 +13,11 @@ class AppTheme {
         brightness: Brightness.light, 
         surfaceContainerHighest: const Color(0xFF160824), 
       ), 
-      scaffoldBackgroundColor: const Color(0xFFF5F2EB), 
+      scaffoldBackgroundColor: const Color.fromARGB(255, 5, 7, 13), 
       appBarTheme: const AppBarTheme( 
         centerTitle: true, 
         elevation: 0,         backgroundColor: primarySeed, 
-        foregroundColor: Colors.white, 
+        foregroundColor: Color.fromARGB(255, 3, 10, 34), 
         titleTextStyle: TextStyle( 
           fontSize: 20, 
           fontWeight: FontWeight.bold, //SUMAREMOS nuestra fuente en la siguiente línea. 

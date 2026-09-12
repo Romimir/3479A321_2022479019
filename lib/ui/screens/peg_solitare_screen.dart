@@ -29,21 +29,29 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen> {
     return CellType.occupiedPeg; 
   }
 
-  void _handleCellTapped(int row, int col, CellType type) {
-    if (type == CellType.voidCell) return;
+void _handleCellTapped(int row, int col, CellType type) {
+  if (type == CellType.voidCell) return;
 
-    setState(() {
+  setState(() {
+    if (rowSelected == null) {
+      if (type == CellType.occupiedPeg) {
+        rowSelected = row;
+        colSelected = col;
+        _logger.d('Se selecciono la celda: $row, $col');
+      }
+    } else {
       if (rowSelected == row && colSelected == col) {
-        _logger.d('Deseleccionada celda en: $rowSelected, $colSelected');
+        _logger.d('Se desselecciono la celda: $rowSelected, $colSelected');
         rowSelected = null;
         colSelected = null;
       } else {
-        rowSelected = row;
-        colSelected = col;
-        _logger.d('Seleccionada celda para acción: $row, $col | Tipo: $type');
+        _logger.d('Moviendo ($rowSelected, $colSelected) hacia ($row, $col)');
+        rowSelected = null;
+        colSelected = null;
       }
-    });
-  }
+    }
+  });
+}
 
   Widget _gameBoard() { 
     return Center( 

@@ -4,6 +4,7 @@ import 'ui/screens/peg_solitare_screen.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/menu_screen.dart';
 import 'ui/screens/rules_screen.dart';
+import 'ui/screens/history_screen.dart';
 
 final logger = Logger();
 
@@ -23,7 +24,9 @@ class MyApp extends StatelessWidget {
       initialRoute: '/', 
      routes: { 
        '/': (context) => const MenuScreen(), 
+       '/about': (context) => const RulesScreen(),
        '/game': (context) => PegSolitaireScreen(), 
+       '/history': (context) => const HistoryScreen(),
        '/rules': (context) => const RulesScreen(), 
      },
     );
