@@ -4,6 +4,7 @@ import '../widgets/peg_cell.dart';
 import 'rules_screen.dart';
 import 'package:logger/logger.dart';
 import '../../models/game_record.dart';
+import '../../models/board_position.dart';
 
 class PegSolitaireScreen extends StatefulWidget {
   const PegSolitaireScreen({super.key});
@@ -15,8 +16,7 @@ class PegSolitaireScreen extends StatefulWidget {
 class _PegSolitaireScreenState extends State<PegSolitaireScreen> {
   final Logger _logger = Logger();
   
-  int? rowSelected;
-  int? colSelected;
+  BoardPosition? positionSelected;
 
   static const int gridSize = 7;
   static const int totalCells = gridSize * gridSize;
@@ -33,21 +33,18 @@ void _handleCellTapped(int row, int col, CellType type) {
   if (type == CellType.voidCell) return;
 
   setState(() {
-    if (rowSelected == null) {
+    if (positionSelected == null) {
       if (type == CellType.occupiedPeg) {
-        rowSelected = row;
-        colSelected = col;
+        positionSelected = BoardPosition(row, col);
         _logger.d('Se selecciono la celda: $row, $col');
       }
     } else {
-      if (rowSelected == row && colSelected == col) {
-        _logger.d('Se desselecciono la celda: $rowSelected, $colSelected');
-        rowSelected = null;
-        colSelected = null;
+      if (positionSelected == BoardPosition(row, col)) {
+        _logger.d('Se desselecciono la celda: $positionSelected');
+        positionSelected = null;
       } else {
-        _logger.d('Moviendo ($rowSelected, $colSelected) hacia ($row, $col)');
-        rowSelected = null;
-        colSelected = null;
+        _logger.d('Moviendo ($positionSelected) hacia ($row, $col)');
+        positionSelected = null;
       }
     }
   });
@@ -72,11 +69,10 @@ void _handleCellTapped(int row, int col, CellType type) {
               final int col = index % gridSize; 
               final CellType cellType = _getCellType(row, col); 
               
-              final bool isSelected = (rowSelected == row && colSelected == col);
+              final bool isSelected = (positionSelected == BoardPosition(row, col));
 
               return PegCell(
-                row: row, 
-                col: col, 
+                position: BoardPosition(row, col),
                 type: cellType,
                 isSelected: isSelected, 
                 onTap: () => _handleCellTapped(row, col, cellType), 
