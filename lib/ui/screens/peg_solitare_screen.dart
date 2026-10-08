@@ -1,56 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:logger/logger.dart';
 import '../../core/enums/cell_type.dart';
 import '../widgets/peg_cell.dart';
 import 'rules_screen.dart';
-import 'package:logger/logger.dart';
-import '../../models/game_record.dart';
 import '../../models/board_position.dart';
+import '../../viewmodels/peg_solitaire_view_model.dart'; 
 
-class PegSolitaireScreen extends StatefulWidget {
+class PegSolitaireScreen extends StatelessWidget {
   const PegSolitaireScreen({super.key});
 
-  @override
-  State<PegSolitaireScreen> createState() => _PegSolitaireScreenState();
-}
+  static final Logger _logger = Logger();
 
-class _PegSolitaireScreenState extends State<PegSolitaireScreen> {
-  final Logger _logger = Logger();
-  
-  BoardPosition? positionSelected;
-
-  static const int gridSize = 7;
-  static const int totalCells = gridSize * gridSize;
-
-  CellType _getCellType(int row, int col) { 
-    final bool isCorner = (row < 2 || row > 4) && (col < 2 || col > 4); 
-    if (isCorner) { 
-      return CellType.voidCell; 
-    } 
-    return CellType.occupiedPeg; 
-  }
-
-void _handleCellTapped(int row, int col, CellType type) {
-  if (type == CellType.voidCell) return;
-
-  setState(() {
-    if (positionSelected == null) {
-      if (type == CellType.occupiedPeg) {
-        positionSelected = BoardPosition(row, col);
-        _logger.d('Se selecciono la celda: $row, $col');
-      }
-    } else {
-      if (positionSelected == BoardPosition(row, col)) {
-        _logger.d('Se desselecciono la celda: $positionSelected');
-        positionSelected = null;
-      } else {
-        _logger.d('Moviendo ($positionSelected) hacia ($row, $col)');
-        positionSelected = null;
-      }
-    }
-  });
-}
-
-  Widget _gameBoard() { 
+  Widget _gameBoard(BuildContext context, PegSolitaireViewModel vm) { 
+    _logger.i("Construyendo el tablero de juego"); 
     return Center( 
       child: Padding( 
         padding: const EdgeInsets.all(8.0), 
@@ -59,50 +22,74 @@ void _handleCellTapped(int row, int col, CellType type) {
           child: GridView.builder( 
             physics: const NeverScrollableScrollPhysics(), 
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount( 
-              crossAxisCount: 7, 
+              crossAxisCount: PegSolitaireViewModel.gridSize, 
               crossAxisSpacing: 2.0, 
               mainAxisSpacing: 2.0, 
             ), 
-            itemCount: totalCells, 
+            itemCount: PegSolitaireViewModel.gridSize * PegSolitaireViewModel.gridSize, 
             itemBuilder: (context, index) { 
-              final int row = index ~/ gridSize; 
-              final int col = index % gridSize; 
-              final CellType cellType = _getCellType(row, col); 
+              final int row = index ~/ PegSolitaireViewModel.gridSize; 
+              final int col = index % PegSolitaireViewModel.gridSize; 
+              final position = BoardPosition(row, col); 
+              final CellType type = vm.getCellType(row, col); 
               
-              final bool isSelected = (positionSelected == BoardPosition(row, col));
-
-              return PegCell(
-                position: BoardPosition(row, col),
-                type: cellType,
-                isSelected: isSelected, 
-                onTap: () => _handleCellTapped(row, col, cellType), 
-              );
-            },  
+              return PegCell( 
+                position: position, 
+                type: type, 
+                isSelected: vm.selectedPosition == position, 
+                onTap: () => context.read<PegSolitaireViewModel>().onCellTapped(position), 
+              ); 
+            }, 
           ), 
         ), 
       ), 
     ); 
   } 
 
+  Widget _buildGameOverBanner(BuildContext context, PegSolitaireViewModel vm) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: vm.isVictory ? const Color.fromARGB(255, 0, 17, 130) : const Color.fromARGB(255, 23, 0, 74),
+      child: Column(
+        children: [
+          Text(
+            vm.isVictory ? '¡VICTORIA TÁCTICA!' : '¡FIN DEL JUEGO!',
+            style: const TextStyle(
+              fontSize: 24, 
+              fontWeight: FontWeight.bold, 
+              color: Color.fromARGB(255, 188, 228, 244),
+              fontFamily: 'MatchaCih',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            vm.isVictory 
+              ? '¡Excelente! Lo lograste en ${vm.moveCount} movimientos.' 
+              : 'Te quedaste sin saltos válidos.',
+            style: const TextStyle(fontSize: 16, color: Color.fromARGB(255, 188, 228, 244)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override 
   Widget build(BuildContext context) { 
-    final GameRecord lastGameRecord = GameRecord(
-      id: 'REC-001',
-      date: DateTime.now(),
-      remainingPegs: 2,
-      totalMoves: 25,
-      durationSeconds: 120,
-      isVictory: true,
-    );
-
-    _logger.i("Último registro de juego: Piezas restantes ${lastGameRecord.remainingPegs} | ${lastGameRecord.durationSeconds} segundos jugados");
+    final vm = context.watch<PegSolitaireViewModel>(); 
 
     return Scaffold( 
       appBar: AppBar(
         title: const Text('Solitario'),
+        iconTheme: const IconThemeData(color: Color.fromARGB(255, 188, 228, 244)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline),
+            icon: const Icon(Icons.refresh_rounded, color: Color.fromARGB(255, 188, 228, 244)),
+            tooltip: 'Reiniciar Tablero',
+            onPressed: () => context.read<PegSolitaireViewModel>().initializeBoard(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.help_outline_rounded, color: Color.fromARGB(255, 188, 228, 244)),
             tooltip: 'Reglas del juego',
             onPressed: () {
               Navigator.push(
@@ -124,23 +111,24 @@ void _handleCellTapped(int row, int col, CellType type) {
           child: Column(
             children: [ 
               Container( 
-                height: 60, 
-                color: const Color.fromARGB(255, 38, 10, 62), 
-                child: const Center( 
-                  child: Text('STATUS: 349 segundos | Piezas restantes: 33', 
-                    style: TextStyle(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                color: const Color.fromARGB(134, 11, 0, 20), 
+                child: Center( 
+                  child: Text('STATUS: En juego | Movimientos: ${vm.moveCount} | Piezas restantes: ${vm.remainingPegs}', 
+                    style: const TextStyle(
                       fontWeight: FontWeight.normal,
-                      fontSize: 14,
+                      fontSize: 12,
                       fontFamily: 'MatchaCih',
-                      color: Color.fromARGB(255, 227, 218, 242),
+                      color: Color.fromARGB(255, 188, 228, 244),
                     ), 
                   ), 
                 ), 
               ), 
               const Divider(height: 1), 
               Expanded( 
-                child: _gameBoard(), 
+                child: _gameBoard(context, vm), 
               ), 
+              if (vm.isGameOver) _buildGameOverBanner(context, vm),
             ], 
           ),
         ), 

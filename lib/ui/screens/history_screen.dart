@@ -93,38 +93,38 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final records = _getMockRecords();
     
+    const Color boxBackgroundColor = Color.fromARGB(134, 11, 0, 20);
+    const Color textColor = Color.fromARGB(255, 188, 228, 244);
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F17),
       appBar: AppBar(
         title: const Text('Historial de Partidas'),
-        backgroundColor: const Color(0xFF1E293B),
-        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: textColor),
       ),
       body: ListView.builder(
         itemCount: records.length,
         itemBuilder: (context, index) {
           final record = records[index];
           return Card(
-            color: const Color(0xFF1E293B),
+            color: boxBackgroundColor,
             margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
             elevation: 4,
             child: ListTile(
               leading: Icon(
                 record.isVictory ? Icons.emoji_events : Icons.flag,
-                color: record.isVictory ? Colors.amberAccent : Colors.white70,
+                color: record.isVictory ? const Color.fromARGB(255, 136, 233, 255) : const Color.fromARGB(179, 131, 117, 194),
               ),
               title: Text(
                 'Partida: ${record.id}',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: textColor, fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'Movimientos: ${record.totalMoves} | Fichas restantes: ${record.remainingPegs}',
-                style: const TextStyle(color: Colors.white70),
+                style: const TextStyle(color: textColor),
               ),
               trailing: Text(
                 record.isVictory ? 'Victoria' : 'Derrota',
                 style: TextStyle(
-                  color: record.isVictory ? Colors.greenAccent : Colors.redAccent,
+                  color: record.isVictory ? const Color.fromARGB(255, 136, 233, 255) : const Color.fromARGB(179, 131, 117, 194),
                   fontWeight: FontWeight.w500,
                 ),
               ),
