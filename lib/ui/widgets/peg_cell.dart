@@ -7,13 +7,15 @@ class PegCell extends StatelessWidget {
   final CellType type;
   final bool isSelected;
   final VoidCallback onTap;
-
+  final bool isValidDestination;
+  
   const PegCell({
     super.key,
     required this.position,
     required this.type,
     required this.isSelected,
     required this.onTap,
+    this.isValidDestination = false,
   });
 
   @override
@@ -22,7 +24,9 @@ class PegCell extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color.fromARGB(194, 28, 13, 54),
+          color: isValidDestination
+              ? const Color.fromARGB(194, 4, 63, 115)
+              : const Color.fromARGB(194, 28, 13, 54),
           border: Border.all(color: const Color.fromARGB(255, 48, 29, 74), width: 1.5),
         ),
         child: Center(

@@ -33,11 +33,15 @@ class PegSolitaireScreen extends StatelessWidget {
               final position = BoardPosition(row, col); 
               final CellType type = vm.getCellType(row, col); 
               
+              final validDestinations = vm.getValidDestinations();
+              final isValidDestination = validDestinations.any((p) => p.row == row && p.col == col);
+
               return PegCell( 
                 position: position, 
                 type: type, 
                 isSelected: vm.selectedPosition == position, 
-                onTap: () => context.read<PegSolitaireViewModel>().onCellTapped(position), 
+                isValidDestination: isValidDestination, 
+                onTap: () => context.read<PegSolitaireViewModel>().onCellTapped(position),
               ); 
             }, 
           ), 
@@ -54,7 +58,7 @@ class PegSolitaireScreen extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            vm.isVictory ? '¡VICTORIA TÁCTICA!' : '¡FIN DEL JUEGO!',
+            vm.isVictory ? '¡VICTORIA!' : '¡FIN DEL JUEGO!',
             style: const TextStyle(
               fontSize: 24, 
               fontWeight: FontWeight.bold, 
@@ -65,8 +69,8 @@ class PegSolitaireScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             vm.isVictory 
-              ? '¡Excelente! Lo lograste en ${vm.moveCount} movimientos.' 
-              : 'Te quedaste sin saltos válidos.',
+              ? 'Partida finalizada con ${vm.moveCount} movimientos.' 
+              : 'No quedán saltos válidos.',
             style: const TextStyle(fontSize: 16, color: Color.fromARGB(255, 188, 228, 244)),
           ),
         ],
@@ -83,6 +87,11 @@ class PegSolitaireScreen extends StatelessWidget {
         title: const Text('Solitario'),
         iconTheme: const IconThemeData(color: Color.fromARGB(255, 188, 228, 244)),
         actions: [
+          IconButton(
+            icon: Icon(Icons.undo, color: vm.canUndo ? Color.fromARGB(255, 188, 228, 244) : Color.fromARGB(255, 119, 123, 182)),
+            tooltip: 'Deshacer movimiento',
+            onPressed: vm.canUndo ? () => context.read<PegSolitaireViewModel>().undoMove() : null,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Color.fromARGB(255, 188, 228, 244)),
             tooltip: 'Reiniciar Tablero',

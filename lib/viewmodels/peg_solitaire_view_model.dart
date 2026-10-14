@@ -7,7 +7,42 @@ class PegSolitaireViewModel extends ChangeNotifier {
   static const int gridSize = 7; 
   final Logger _logger = Logger();
 
-  // Estado interno matricial y contadores 
+  final List<List<List<CellType>>> _undoStack = [];
+  bool get canUndo => _undoStack.isNotEmpty;
+
+  List<List<CellType>> _copyGrid(List<List<CellType>> source) {
+    return source.map((row) => List<CellType>.from(row)).toList();
+  }
+
+  void undoMove() {
+    if (_undoStack.isEmpty) return;
+    _board = _undoStack.removeLast();
+    _selectedPosition = null;
+    _moveCount--;
+    _remainingPegs++;
+    _isGameOver = false;
+    notifyListeners();
+  }
+
+  List<BoardPosition> getValidDestinations() {
+    if (_selectedPosition == null) return [];
+    List<BoardPosition> destinations = [];
+    final directions = [[-2, 0], [2, 0], [0, -2], [0, 2]];
+    
+    for (var dir in directions) {
+      int newRow = _selectedPosition!.row + dir[0];
+      int newCol = _selectedPosition!.col + dir[1]; 
+      
+      if (newRow >= 0 && newRow < gridSize && newCol >= 0 && newCol < gridSize) {
+        BoardPosition dest = BoardPosition(newRow, newCol);
+        if (_isValidMove(_selectedPosition!, dest)) {
+          destinations.add(dest);
+        }
+      }
+    }
+    return destinations;
+  }
+
   late List<List<CellType>> _board; 
   BoardPosition? _selectedPosition; 
   int _remainingPegs = 0; 
@@ -15,7 +50,6 @@ class PegSolitaireViewModel extends ChangeNotifier {
   bool _isGameOver = false; 
   bool _isVictory = false; 
  
-  // Getters inmutables expuestos hacia la UI 
   List<List<CellType>> get board => _board; 
   BoardPosition? get selectedPosition => _selectedPosition; 
   int get remainingPegs => _remainingPegs; 
@@ -30,27 +64,26 @@ class PegSolitaireViewModel extends ChangeNotifier {
   void initializeBoard() { 
     _board = List.generate(gridSize, (row) { 
       return List.generate(gridSize, (col) { 
-        // Esquinas no jugables
         if ((row < 2 || row > 4) && (col < 2 || col > 4)) { 
           return CellType.voidCell; 
         } 
-        // Centro estándar desocupado (3, 3)
         if (row == 3 && col == 3) { 
           return CellType.emptyHole; 
         } 
         return CellType.occupiedPeg; 
       }); 
     }); 
-       _selectedPosition = null; 
+    _selectedPosition = null; 
     _remainingPegs = 32; 
     _moveCount = 0; 
     _isGameOver = false; 
     _isVictory = false; 
- 
+    
+    _undoStack.clear();
+
     notifyListeners(); 
   } 
  
-  /// Retorna el tipo de celda en una coordenadas seguras
   CellType getCellType(int row, int col) { 
     if (row < 0 || row >= gridSize || col < 0 || col >= gridSize) { 
       return CellType.voidCell; 
@@ -59,42 +92,39 @@ class PegSolitaireViewModel extends ChangeNotifier {
   } 
 
   void onCellTapped(BoardPosition pos) { 
-   if (_isGameOver) { 
-     return; 
+    if (_isGameOver) { 
+      return; 
     } 
  
-     final CellType tappedType = _board[pos.row][pos.col]; 
-     if (tappedType == CellType.voidCell) return; 
+    final CellType tappedType = _board[pos.row][pos.col]; 
+    if (tappedType == CellType.voidCell) return; 
  
-    // ESTADO 0: IDLE (No hay celda origen seleccionada) 
     if (_selectedPosition == null) { 
       if (tappedType == CellType.occupiedPeg) { 
         _selectedPosition = pos; 
         notifyListeners(); 
       } 
       return; 
-     } 
+    } 
  
-    // ESTADO 1: SOURCE_SELECTED (Existe una clavija origen activa) 
-     final BoardPosition origin = _selectedPosition!; 
+    final BoardPosition origin = _selectedPosition!; 
  
-    // Transición 1.1: Pulsar sobre la misma casilla -> Deselección (Toggle) 
     if (origin == pos) { 
       _selectedPosition = null; 
       notifyListeners(); 
       return; 
-     } 
+    } 
  
-    // Transición 1.2: Pulsar sobre otra clavija propia -> Alternar selección 
     if (tappedType == CellType.occupiedPeg) { 
       _selectedPosition = pos; 
       notifyListeners(); 
-       return; 
+      return; 
     } 
  
-    // Transición 1.3: Pulsar sobre un hueco vacío -> Evaluar salto y captura 
     if (tappedType == CellType.emptyHole) { 
       if (_isValidMove(origin, pos)) { 
+        _undoStack.add(_copyGrid(_board));
+
         _executeMove(origin, pos); 
         _selectedPosition = null; 
         _evaluateGameTermination(); 
@@ -109,15 +139,12 @@ class PegSolitaireViewModel extends ChangeNotifier {
     final int rowDelta = (from.row - to.row).abs(); 
     final int colDelta = (from.col - to.col).abs(); 
   
-    // 1. Debe ser un salto ortogonal estricto de distancia 2 
     final bool isOrthogonalTwoStep = 
         (rowDelta == 2 && colDelta == 0) || (rowDelta == 0 && colDelta == 2); 
     if (!isOrthogonalTwoStep) return false; 
   
-    // 2. El destino debe ser un hueco vacío 
     if (_board[to.row][to.col] != CellType.emptyHole) return false; 
   
-    // 3. La celda intermedia debe contener una clavija para ser capturada 
     final int midRow = (from.row + to.row) ~/ 2; 
     final int midCol = (from.col + to.col) ~/ 2; 
     if (_board[midRow][midCol] != CellType.occupiedPeg) return false; 
@@ -138,8 +165,8 @@ class PegSolitaireViewModel extends ChangeNotifier {
   
     _logger.i('Salto ejecutado con éxito: $from -> $to | Clavijas restantes: $_remainingPegs'); 
   } 
+
   void _evaluateGameTermination() { 
-    // Condición de Victoria: Queda exactamente 1 clavija en el tablero 
     if (_remainingPegs == 1) { 
       _isGameOver = true; 
       _isVictory = true; 
@@ -147,44 +174,42 @@ class PegSolitaireViewModel extends ChangeNotifier {
       return; 
     } 
   
-    // No quedan saltos ortogonales válidos 
     if (!_hasValidMovesRemaining()) { 
       _isGameOver = true; 
       _isVictory = false; 
       _logger.w('Fin de juego por bloqueo. No existen movimientos válidos.'); 
     } 
   } 
-   /// Algoritmo exhaustivo de detección de estancamiento sobre las 33 casillas jugables. 
- bool _hasValidMovesRemaining() { 
-   const List<List<int>> directions = [ 
-     [-2, 0], // Arriba 
-     [2, 0],  // Abajo 
-     [0, -2], // Izquierda 
-     [0, 2],  // Derecha 
-   ]; 
+  
+  bool _hasValidMovesRemaining() { 
+    const List<List<int>> directions = [ 
+      [-2, 0], 
+      [2, 0],  
+      [0, -2], 
+      [0, 2],  
+    ]; 
  
-   for (int r = 0; r < gridSize; r++) { 
-     for (int c = 0; c < gridSize; c++) { 
-       if (_board[r][c] == CellType.occupiedPeg) { 
-         final from = BoardPosition(r, c); 
+    for (int r = 0; r < gridSize; r++) { 
+      for (int c = 0; c < gridSize; c++) { 
+        if (_board[r][c] == CellType.occupiedPeg) { 
+          final from = BoardPosition(r, c); 
  
-         for (final dir in directions) { 
-           final int targetRow = r + dir[0]; 
-           final int targetCol = c + dir[1]; 
+          for (final dir in directions) { 
+            final int targetRow = r + dir[0]; 
+            final int targetCol = c + dir[1]; 
  
-           // Validar que el salto potencial no desborde los límites de la matriz 
-           if (targetRow >= 0 && targetRow < gridSize && 
-               targetCol >= 0 && targetCol < gridSize) { 
-             final to = BoardPosition(targetRow, targetCol); 
-             if (_board[targetRow][targetCol] != CellType.voidCell && 
-                 _isValidMove(from, to)) { 
-               return true; // Existe al menos un movimiento válido en el tablero 
-             } 
-           } 
-         } 
-       } 
-     } 
-   } 
-   return false; 
- } 
-} 
+            if (targetRow >= 0 && targetRow < gridSize && 
+                targetCol >= 0 && targetCol < gridSize) { 
+              final to = BoardPosition(targetRow, targetCol); 
+              if (_board[targetRow][targetCol] != CellType.voidCell && 
+                  _isValidMove(from, to)) { 
+                return true; 
+              } 
+            } 
+          } 
+        } 
+      } 
+    } 
+    return false; 
+  } 
+}
