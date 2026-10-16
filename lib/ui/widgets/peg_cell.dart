@@ -33,15 +33,15 @@ class PegCell extends StatelessWidget {
           child: type == CellType.occupiedPeg
               ? Image.asset(
                   isSelected
-                      ? 'assets/icons/Seleccionado.png'
-                      : 'assets/icons/Casilla.png',
+                      ? 'assets/images/Seleccionado.png'
+                      : 'assets/images/Casilla.png',
                   width: 30,
                   height: 30,
                   fit: BoxFit.contain,
                 )
               : type == CellType.emptyHole
                   ? Image.asset(
-                      'assets/icons/Vacio.png',
+                      'assets/images/Vacio.png',
                       width: 30,
                       height: 30,
                       fit: BoxFit.contain,

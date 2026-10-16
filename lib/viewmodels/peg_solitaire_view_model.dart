@@ -2,11 +2,11 @@ import 'package:flutter/foundation.dart';
 import '../models/board_position.dart'; 
 import '../core/enums/cell_type.dart'; 
 import 'package:logger/logger.dart';
+import '../services/audio_service.dart';
 
 class PegSolitaireViewModel extends ChangeNotifier { 
   static const int gridSize = 7; 
   final Logger _logger = Logger();
-
   final List<List<List<CellType>>> _undoStack = [];
   bool get canUndo => _undoStack.isNotEmpty;
 
@@ -102,6 +102,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
     if (_selectedPosition == null) { 
       if (tappedType == CellType.occupiedPeg) { 
         _selectedPosition = pos; 
+        AudioService.instance.playSelect();
         notifyListeners(); 
       } 
       return; 
@@ -162,7 +163,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
   
     _remainingPegs--; 
     _moveCount++; 
-  
+    AudioService.instance.playJump();
     _logger.i('Salto ejecutado con éxito: $from -> $to | Clavijas restantes: $_remainingPegs'); 
   } 
 
@@ -170,6 +171,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
     if (_remainingPegs == 1) { 
       _isGameOver = true; 
       _isVictory = true; 
+      AudioService.instance.playGameOver();
       _logger.i('¡VICTORIA! Partida completada en $_moveCount movimientos.'); 
       return; 
     } 
@@ -177,6 +179,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
     if (!_hasValidMovesRemaining()) { 
       _isGameOver = true; 
       _isVictory = false; 
+      AudioService.instance.playGameOver();
       _logger.w('Fin de juego por bloqueo. No existen movimientos válidos.'); 
     } 
   } 
