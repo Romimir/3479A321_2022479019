@@ -31,7 +31,8 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
 
   void _handleShakeEvent(){
     final vm = context.read<PegSolitaireViewModel>();
-
+    if (vm.isGameOver){
+      
     _logger.i("Se sacudió el dispositivo: Reiniciando tablero");
     vm.initializeBoard();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -41,6 +42,10 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
         backgroundColor: Color.fromARGB(255, 0, 17, 130),
       ),
     );
+    }
+    else{
+      _logger.d("Se sacudió el dispositivo: Juego en curso - No se puede reiniciar el tablero");
+    }
   }
 
   @override
