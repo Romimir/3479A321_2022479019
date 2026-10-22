@@ -6,11 +6,48 @@ import '../widgets/peg_cell.dart';
 import 'rules_screen.dart';
 import '../../models/board_position.dart';
 import '../../viewmodels/peg_solitaire_view_model.dart'; 
+import '../../services/shake_detector_service.dart';
 
-class PegSolitaireScreen extends StatelessWidget {
+class PegSolitaireScreen extends StatefulWidget {
   const PegSolitaireScreen({super.key});
 
+  @override
+  State<PegSolitaireScreen> createState() => _PegSolitaireScreenState();
+}
+
+class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
+  
   static final Logger _logger = Logger();
+  ShakeDetectorService? _shakeDetector;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeDetector = ShakeDetectorService(
+      onShake: _handleShakeEvent,
+    );
+    _shakeDetector?.startListening();
+  }
+
+  void _handleShakeEvent(){
+    final vm = context.read<PegSolitaireViewModel>();
+
+    _logger.i("Se sacudió el dispositivo: Reiniciando tablero");
+    vm.initializeBoard();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tablero reiniciado'),
+        duration: Duration(seconds: 2),
+        backgroundColor: Color.fromARGB(255, 0, 17, 130),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shakeDetector?.stopListening();
+    super.dispose();
+  }
 
   Widget _gameBoard(BuildContext context, PegSolitaireViewModel vm) { 
     _logger.i("Construyendo el tablero de juego"); 
