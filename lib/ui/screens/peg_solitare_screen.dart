@@ -7,6 +7,7 @@ import 'rules_screen.dart';
 import '../../models/board_position.dart';
 import '../../viewmodels/peg_solitaire_view_model.dart'; 
 import '../../services/shake_detector_service.dart';
+import 'package:share_plus/share_plus.dart';
 
 class PegSolitaireScreen extends StatefulWidget {
   const PegSolitaireScreen({super.key});
@@ -115,6 +116,22 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
               : 'No quedán saltos válidos.',
             style: const TextStyle(fontSize: 16, color: Color.fromARGB(255, 188, 228, 244)),
           ),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 0, 17, 130),
+              foregroundColor: const Color.fromARGB(255, 188, 228, 244),
+            ),
+            icon: const Icon(Icons.share),
+            label: const Text(
+              'Compartir resultado',
+              style: TextStyle(fontFamily: 'MatchaCih', color: Color.fromARGB(255, 188, 228, 244)),
+            ),
+            onPressed: () async {
+              final String message = "Termine una partida de Peg Solitaire en ${vm.moveCount} movimientos dejando ${vm.remainingPegs} piezas en el tablero";
+              await SharePlus.instance.share( ShareParams(text:message));
+            },
+          )
         ],
       ),
     );
