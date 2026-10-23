@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart'; 
 import 'package:logger/logger.dart'; 
  
@@ -39,6 +40,7 @@ class AudioService {
     if (!_isInitialized) return; 
     try { 
       await _player.play(AssetSource('audio/jump.mp3')); 
+      await HapticFeedback.mediumImpact();
       _logger.w('Reproduciendo jump.mp3');
     } catch (e) { 
       _logger.w('No se pudo reproducir jump.mp3: $e'); 

@@ -20,12 +20,14 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
   
   static final Logger _logger = Logger();
   ShakeDetectorService? _shakeDetector;
+  double _currentSensitivity = 7.0;
 
   @override
   void initState() {
     super.initState();
     _shakeDetector = ShakeDetectorService(
       onShake: _handleShakeEvent,
+      shakeThreshold: _currentSensitivity,
     );
     _shakeDetector?.startListening();
   }
@@ -146,6 +148,41 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
         title: const Text('Solitario'),
         iconTheme: const IconThemeData(color: Color.fromARGB(255, 188, 228, 244)),
         actions: [
+          PopupMenuButton<double>(
+            icon: const Icon(Icons.vibration, color: Color.fromARGB(255, 188, 228, 244)),
+            tooltip: 'Sensibilidad de agitación',
+            onSelected: (double newTreshold){
+              setState((){
+                _currentSensitivity = newTreshold;
+                _shakeDetector?.shakeThreshold = newTreshold;
+              });
+              String label = newTreshold == 3.0
+                ?'Suave (3.0)'
+                :(newTreshold == 7.0 ? 'Media (7.0)' : 'Fuerte (13.0)');
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Sensibilidad ajustada a: $label'),
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: const Color.fromARGB(255, 0, 17, 130),
+                ),
+              );
+            },
+            itemBuilder: (context) => <PopupMenuEntry<double>>[
+              const PopupMenuItem<double>(
+                value: 3.0,
+                child: Text('Suave (3.0)'),
+              ),
+              const PopupMenuItem<double>(
+                value: 7.0,
+                child: Text('Media (7.0)'),
+              ),
+              const PopupMenuItem<double>(
+                value: 13.0,
+                child: Text('Fuerte (13.0)'),
+              ),
+            ],
+          ),
           IconButton(
             icon: Icon(Icons.undo, color: vm.canUndo ? Color.fromARGB(255, 188, 228, 244) : Color.fromARGB(255, 119, 123, 182)),
             tooltip: 'Deshacer movimiento',

@@ -5,7 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 class ShakeDetectorService {
-  final double shakeThreshold;
+  double shakeThreshold;
   final VoidCallback onShake;
   final Duration debounceDuration;
   final Logger _logger = Logger();
@@ -17,7 +17,7 @@ class ShakeDetectorService {
 
   ShakeDetectorService({
     required this.onShake,
-    this.shakeThreshold = 15.0, // Umbral de aceleración en m/s²
+    this.shakeThreshold = 7.0, // Umbral de aceleración en m/s²
     this.debounceDuration = const Duration(milliseconds: 1200), // Filtro de rebote
   }) {
     _initLifecycleListener();
@@ -53,7 +53,7 @@ class ShakeDetectorService {
           final now = DateTime.now();
           if (now.difference(_lastShakeTime) > debounceDuration) {
             _lastShakeTime = now;
-            _logger.i('¡Shake detectado! Magnitud: ${magnitude.toStringAsFixed(2)} m/s²');
+            _logger.i('¡Shake detectado! Magnitud: ${magnitude.toStringAsFixed(2)} m/s² (umbral: $shakeThreshold)');
             onShake();
           }
         }
