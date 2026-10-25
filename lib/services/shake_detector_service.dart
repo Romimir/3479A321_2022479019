@@ -18,7 +18,7 @@ class ShakeDetectorService {
   ShakeDetectorService({
     required this.onShake,
     this.shakeThreshold = 7.0, // Umbral de aceleración en m/s²
-    this.debounceDuration = const Duration(milliseconds: 1200), // Filtro de rebote
+    this.debounceDuration = const Duration(milliseconds: 1200),
   }) {
     _initLifecycleListener();
   }
