@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:logger/logger.dart'; 
+import 'board_position.dart';
 
 @immutable 
 class MoveRecord { 
