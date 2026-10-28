@@ -1,14 +1,45 @@
 import 'package:flutter/foundation.dart'; 
+import 'package:logger/logger.dart';
 import '../models/board_position.dart'; 
 import '../core/enums/cell_type.dart'; 
-import 'package:logger/logger.dart';
 import '../services/audio_service.dart';
+import '../models/move_record.dart';
+import '../models/game_record.dart';
+import '../repositories/game_history_repository.dart';
+import '../services/preferences_services.dart';
 
 class PegSolitaireViewModel extends ChangeNotifier { 
   static const int gridSize = 7; 
   final Logger _logger = Logger();
+  
+  final IGameHistoryRepository? historyRepository;
+  final PreferencesService? preferencesService;
+
+  final List<MoveRecord> _movesHistory = [];
+
   final List<List<List<CellType>>> _undoStack = [];
   bool get canUndo => _undoStack.isNotEmpty;
+
+  late List<List<CellType>> _board; 
+  BoardPosition? _selectedPosition; 
+  int _remainingPegs = 0; 
+  int _moveCount = 0; 
+  bool _isGameOver = false; 
+  bool _isVictory = false; 
+
+  List<List<CellType>> get board => _board; 
+  BoardPosition? get selectedPosition => _selectedPosition; 
+  int get remainingPegs => _remainingPegs; 
+  int get moveCount => _moveCount; 
+  bool get isGameOver => _isGameOver; 
+  bool get isVictory => _isVictory; 
+
+  PegSolitaireViewModel({
+    this.historyRepository,
+    this.preferencesService,
+  }) { 
+    initializeBoard(); 
+  } 
 
   List<List<CellType>> _copyGrid(List<List<CellType>> source) {
     return source.map((row) => List<CellType>.from(row)).toList();
@@ -21,6 +52,11 @@ class PegSolitaireViewModel extends ChangeNotifier {
     _moveCount--;
     _remainingPegs++;
     _isGameOver = false;
+    
+    if (_movesHistory.isNotEmpty) {
+      _movesHistory.removeLast();
+    }
+    
     notifyListeners();
   }
 
@@ -43,24 +79,6 @@ class PegSolitaireViewModel extends ChangeNotifier {
     return destinations;
   }
 
-  late List<List<CellType>> _board; 
-  BoardPosition? _selectedPosition; 
-  int _remainingPegs = 0; 
-  int _moveCount = 0; 
-  bool _isGameOver = false; 
-  bool _isVictory = false; 
- 
-  List<List<CellType>> get board => _board; 
-  BoardPosition? get selectedPosition => _selectedPosition; 
-  int get remainingPegs => _remainingPegs; 
-  int get moveCount => _moveCount; 
-  bool get isGameOver => _isGameOver; 
-  bool get isVictory => _isVictory; 
- 
-  PegSolitaireViewModel() { 
-    initializeBoard(); 
-  } 
- 
   void initializeBoard() { 
     _board = List.generate(gridSize, (row) { 
       return List.generate(gridSize, (col) { 
@@ -80,10 +98,11 @@ class PegSolitaireViewModel extends ChangeNotifier {
     _isVictory = false; 
     
     _undoStack.clear();
+    _movesHistory.clear();
 
     notifyListeners(); 
   } 
- 
+
   CellType getCellType(int row, int col) { 
     if (row < 0 || row >= gridSize || col < 0 || col >= gridSize) { 
       return CellType.voidCell; 
@@ -95,10 +114,10 @@ class PegSolitaireViewModel extends ChangeNotifier {
     if (_isGameOver) { 
       return; 
     } 
- 
+
     final CellType tappedType = _board[pos.row][pos.col]; 
     if (tappedType == CellType.voidCell) return; 
- 
+
     if (_selectedPosition == null) { 
       if (tappedType == CellType.occupiedPeg) { 
         _selectedPosition = pos; 
@@ -107,21 +126,21 @@ class PegSolitaireViewModel extends ChangeNotifier {
       } 
       return; 
     } 
- 
+
     final BoardPosition origin = _selectedPosition!; 
- 
+
     if (origin == pos) { 
       _selectedPosition = null; 
       notifyListeners(); 
       return; 
     } 
- 
+
     if (tappedType == CellType.occupiedPeg) { 
       _selectedPosition = pos; 
       notifyListeners(); 
       return; 
     } 
- 
+
     if (tappedType == CellType.emptyHole) { 
       if (_isValidMove(origin, pos)) { 
         _undoStack.add(_copyGrid(_board));
@@ -139,30 +158,37 @@ class PegSolitaireViewModel extends ChangeNotifier {
   bool _isValidMove(BoardPosition from, BoardPosition to) { 
     final int rowDelta = (from.row - to.row).abs(); 
     final int colDelta = (from.col - to.col).abs(); 
-  
+
     final bool isOrthogonalTwoStep = 
         (rowDelta == 2 && colDelta == 0) || (rowDelta == 0 && colDelta == 2); 
     if (!isOrthogonalTwoStep) return false; 
-  
+
     if (_board[to.row][to.col] != CellType.emptyHole) return false; 
-  
+
     final int midRow = (from.row + to.row) ~/ 2; 
     final int midCol = (from.col + to.col) ~/ 2; 
     if (_board[midRow][midCol] != CellType.occupiedPeg) return false; 
-  
+
     return true; 
   } 
 
   void _executeMove(BoardPosition from, BoardPosition to) { 
     final int midRow = (from.row + to.row) ~/ 2; 
     final int midCol = (from.col + to.col) ~/ 2; 
-  
+
     _board[from.row][from.col] = CellType.emptyHole;     
     _board[midRow][midCol] = CellType.emptyHole;         
     _board[to.row][to.col] = CellType.occupiedPeg;       
-  
+
     _remainingPegs--; 
     _moveCount++; 
+
+    _movesHistory.add(MoveRecord(
+      from: from,
+      to: to,
+      timestamp: DateTime.now(),
+    ));
+
     AudioService.instance.playJump();
     _logger.i('Salto ejecutado con éxito: $from -> $to | Clavijas restantes: $_remainingPegs'); 
   } 
@@ -173,17 +199,19 @@ class PegSolitaireViewModel extends ChangeNotifier {
       _isVictory = true; 
       AudioService.instance.playGameOver();
       _logger.i('¡VICTORIA! Partida completada en $_moveCount movimientos.'); 
+      _persistCompletedGame();
       return; 
     } 
-  
+
     if (!_hasValidMovesRemaining()) { 
       _isGameOver = true; 
       _isVictory = false; 
       AudioService.instance.playGameOver();
       _logger.w('Fin de juego por bloqueo. No existen movimientos válidos.'); 
+      _persistCompletedGame();
     } 
   } 
-  
+
   bool _hasValidMovesRemaining() { 
     const List<List<int>> directions = [ 
       [-2, 0], 
@@ -191,16 +219,16 @@ class PegSolitaireViewModel extends ChangeNotifier {
       [0, -2], 
       [0, 2],  
     ]; 
- 
+
     for (int r = 0; r < gridSize; r++) { 
       for (int c = 0; c < gridSize; c++) { 
         if (_board[r][c] == CellType.occupiedPeg) { 
           final from = BoardPosition(r, c); 
- 
+
           for (final dir in directions) { 
             final int targetRow = r + dir[0]; 
             final int targetCol = c + dir[1]; 
- 
+
             if (targetRow >= 0 && targetRow < gridSize && 
                 targetCol >= 0 && targetCol < gridSize) { 
               final to = BoardPosition(targetRow, targetCol); 
@@ -215,4 +243,24 @@ class PegSolitaireViewModel extends ChangeNotifier {
     } 
     return false; 
   } 
+
+  Future<void> _persistCompletedGame() async {
+    final record = GameRecord(
+      id: 'REC-${DateTime.now().millisecondsSinceEpoch}',
+      date: DateTime.now(),
+      remainingPegs: _remainingPegs,
+      totalMoves: _moveCount,
+      durationSeconds: 0,
+      isVictory: _isVictory,
+      moves: List.unmodifiable(_movesHistory),
+    );
+
+    try {
+      await historyRepository?.saveGame(record);
+      await preferencesService?.checkAndSaveRecord(_remainingPegs);
+      _logger.i('Resumen de la partida guardado en disco correctamente.');
+    } catch (e) {
+      _logger.e('Error al guardar el resumen en el repositorio: $e');
+    }
+  }
 }

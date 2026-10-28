@@ -8,34 +8,28 @@ import 'ui/screens/rules_screen.dart';
 import 'ui/screens/history_screen.dart';
 import 'viewmodels/peg_solitaire_view_model.dart';
 import '../services/preferences_services.dart';
-
+import 'repositories/game_history_repository.dart';
+import 'repositories/json_file_history_repository.dart';
 
 final logger = Logger();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final prefsService = await PreferencesService.create();
-  
-  logger.i('--- INICIO PRUEBA DE PREFERENCIAS ---');
-  logger.i('1. Valor inicial de sonido: ${prefsService.isSoundEnabled}');
-  
-  await prefsService.setSoundEnabled(false);
-  logger.i('2. Valor tras setSoundEnabled(false): ${prefsService.isSoundEnabled}');
-  
-  await prefsService.setSoundEnabled(true);
-  logger.i('3. Valor reestablecido: ${prefsService.isSoundEnabled}');
-  logger.i('--- FIN PRUEBA DE PREFERENCIAS ---');
+  final preferencesService = await PreferencesService.create();
+  final historyRepository = JsonFileHistoryRepository();
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<IGameHistoryRepository>.value(value:historyRepository),
+        Provider<PreferencesService>.value(value: preferencesService),
+      ],
+      child: const MyApp(),
+      ),
+  );
 }
 
-/*
-void main() {
-  logger.i("Logger funcionando");
-  runApp(const MyApp());
-}
-*/
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -49,7 +43,10 @@ class MyApp extends StatelessWidget {
        '/': (context) => const MenuScreen(), 
        '/about': (context) => const RulesScreen(),
        '/game': (context) => ChangeNotifierProvider<PegSolitaireViewModel>(
-        create: (_) => PegSolitaireViewModel(),
+        create: (_) => PegSolitaireViewModel(
+          historyRepository: context.read<IGameHistoryRepository>(),
+          preferencesService: context.read<PreferencesService>(),  
+        ),
         child: const PegSolitaireScreen(),
        ), 
        '/history': (context) => const HistoryScreen(),

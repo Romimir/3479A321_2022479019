@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/enums/cell_type.dart';
-import '../widgets/peg_cell.dart';
-import 'rules_screen.dart';
 import '../../models/board_position.dart';
 import '../../viewmodels/peg_solitaire_view_model.dart'; 
 import '../../services/shake_detector_service.dart';
-import 'package:share_plus/share_plus.dart';
+import 'rules_screen.dart';
+import '../widgets/peg_cell.dart';
 
 class PegSolitaireScreen extends StatefulWidget {
   const PegSolitaireScreen({super.key});
