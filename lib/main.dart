@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'ui/screens/peg_solitare_screen.dart';
 import 'ui/theme/app_theme.dart';
@@ -10,8 +9,8 @@ import 'viewmodels/peg_solitaire_view_model.dart';
 import '../services/preferences_services.dart';
 import 'repositories/game_history_repository.dart';
 import 'repositories/json_file_history_repository.dart';
+//import '../../core/utils/app_logger.dart';
 
-final logger = Logger();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

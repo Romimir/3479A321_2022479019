@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:logger/logger.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/enums/cell_type.dart';
 import '../../models/board_position.dart';
 import '../../viewmodels/peg_solitaire_view_model.dart'; 
 import '../../services/shake_detector_service.dart';
+import '../../services/screenshot_service.dart';
 import 'rules_screen.dart';
 import '../widgets/peg_cell.dart';
+import '../../core/utils/app_logger.dart';
 
 class PegSolitaireScreen extends StatefulWidget {
   const PegSolitaireScreen({super.key});
@@ -16,9 +17,9 @@ class PegSolitaireScreen extends StatefulWidget {
   State<PegSolitaireScreen> createState() => _PegSolitaireScreenState();
 }
 
-class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
+class _PegSolitaireScreenState extends State<PegSolitaireScreen> {
   
-  static final Logger _logger = Logger();
+  final GlobalKey _boardBoundaryKey = GlobalKey();
   ShakeDetectorService? _shakeDetector;
   double _currentSensitivity = 7.0;
 
@@ -32,22 +33,20 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
     _shakeDetector?.startListening();
   }
 
-  void _handleShakeEvent(){
+  void _handleShakeEvent() {
     final vm = context.read<PegSolitaireViewModel>();
-    if (vm.isGameOver){
-      
-    _logger.i("Se sacudió el dispositivo: Reiniciando tablero");
-    vm.initializeBoard();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tablero reiniciado'),
-        duration: Duration(seconds: 2),
-        backgroundColor: Color.fromARGB(255, 0, 17, 130),
-      ),
-    );
-    }
-    else{
-      _logger.d("Se sacudió el dispositivo: Juego en curso - No se puede reiniciar el tablero");
+    if (vm.isGameOver) {
+      AppLogger.info("Se sacudió el dispositivo: Reiniciando tablero");
+      vm.initializeBoard();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tablero reiniciado'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Color.fromARGB(255, 0, 17, 130),
+        ),
+      );
+    } else {
+      AppLogger.debug("Se sacudió el dispositivo: Juego en curso - No se puede reiniciar el tablero");
     }
   }
 
@@ -58,37 +57,40 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
   }
 
   Widget _gameBoard(BuildContext context, PegSolitaireViewModel vm) { 
-    _logger.i("Construyendo el tablero de juego"); 
-    return Center( 
-      child: Padding( 
-        padding: const EdgeInsets.all(8.0), 
-        child: AspectRatio( 
-          aspectRatio: 1.0, 
-          child: GridView.builder( 
-            physics: const NeverScrollableScrollPhysics(), 
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount( 
-              crossAxisCount: PegSolitaireViewModel.gridSize, 
-              crossAxisSpacing: 2.0, 
-              mainAxisSpacing: 2.0, 
-            ), 
-            itemCount: PegSolitaireViewModel.gridSize * PegSolitaireViewModel.gridSize, 
-            itemBuilder: (context, index) { 
-              final int row = index ~/ PegSolitaireViewModel.gridSize; 
-              final int col = index % PegSolitaireViewModel.gridSize; 
-              final position = BoardPosition(row, col); 
-              final CellType type = vm.getCellType(row, col); 
-              
-              final validDestinations = vm.getValidDestinations();
-              final isValidDestination = validDestinations.any((p) => p.row == row && p.col == col);
+    AppLogger.info("Construyendo el tablero de juego"); 
+    return RepaintBoundary( 
+      key: _boardBoundaryKey,
+      child: Center(
+        child: Padding( 
+          padding: const EdgeInsets.all(8.0), 
+          child: AspectRatio( 
+            aspectRatio: 1.0, 
+            child: GridView.builder( 
+              physics: const NeverScrollableScrollPhysics(), 
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount( 
+                crossAxisCount: PegSolitaireViewModel.gridSize, 
+                crossAxisSpacing: 2.0, 
+                mainAxisSpacing: 2.0, 
+              ), 
+              itemCount: PegSolitaireViewModel.gridSize * PegSolitaireViewModel.gridSize, 
+              itemBuilder: (context, index) { 
+                final int row = index ~/ PegSolitaireViewModel.gridSize; 
+                final int col = index % PegSolitaireViewModel.gridSize; 
+                final position = BoardPosition(row, col); 
+                final CellType type = vm.getCellType(row, col); 
+                
+                final validDestinations = vm.getValidDestinations();
+                final isValidDestination = validDestinations.any((p) => p.row == row && p.col == col);
 
-              return PegCell( 
-                position: position, 
-                type: type, 
-                isSelected: vm.selectedPosition == position, 
-                isValidDestination: isValidDestination, 
-                onTap: () => context.read<PegSolitaireViewModel>().onCellTapped(position),
-              ); 
-            }, 
+                return PegCell( 
+                  position: position, 
+                  type: type, 
+                  isSelected: vm.selectedPosition == position, 
+                  isValidDestination: isValidDestination, 
+                  onTap: () => context.read<PegSolitaireViewModel>().onCellTapped(position),
+                ); 
+              }, 
+            ), 
           ), 
         ), 
       ), 
@@ -115,7 +117,7 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
           Text(
             vm.isVictory 
               ? 'Partida finalizada con ${vm.moveCount} movimientos.' 
-              : 'No quedán saltos válidos.',
+              : 'No quedan saltos válidos.',
             style: const TextStyle(fontSize: 16, color: Color.fromARGB(255, 188, 228, 244)),
           ),
           const SizedBox(height: 8),
@@ -130,8 +132,19 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
               style: TextStyle(fontFamily: 'MatchaCih', color: Color.fromARGB(255, 188, 228, 244)),
             ),
             onPressed: () async {
-              final String message = "Termine una partida de Peg Solitaire en ${vm.moveCount} movimientos dejando ${vm.remainingPegs} piezas en el tablero";
-              await SharePlus.instance.share( ShareParams(text:message));
+              final String? imagePath = await ScreenshotService.captureWidgetToImage(_boardBoundaryKey);
+              final String message = "Terminé una partida de Peg Solitaire en ${vm.moveCount} movimientos dejando ${vm.remainingPegs} piezas en el tablero";
+              
+              if (imagePath != null) {
+                await SharePlus.instance.share(
+                  ShareParams(
+                    files: [XFile(imagePath)],
+                    text: message,
+                  ),
+                );
+              } else {
+                AppLogger.warning('No se pudo capturar una foto del tablero para compartir.');
+              }
             },
           )
         ],
@@ -151,14 +164,14 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
           PopupMenuButton<double>(
             icon: const Icon(Icons.vibration, color: Color.fromARGB(255, 188, 228, 244)),
             tooltip: 'Sensibilidad de agitación',
-            onSelected: (double newTreshold){
-              setState((){
+            onSelected: (double newTreshold) {
+              setState(() {
                 _currentSensitivity = newTreshold;
                 _shakeDetector?.shakeThreshold = newTreshold;
               });
               String label = newTreshold == 3.0
-                ?'Suave (3.0)'
-                :(newTreshold == 7.0 ? 'Media (7.0)' : 'Fuerte (13.0)');
+                ? 'Suave (3.0)'
+                : (newTreshold == 7.0 ? 'Media (7.0)' : 'Fuerte (13.0)');
 
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -184,7 +197,7 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
             ],
           ),
           IconButton(
-            icon: Icon(Icons.undo, color: vm.canUndo ? Color.fromARGB(255, 188, 228, 244) : Color.fromARGB(255, 119, 123, 182)),
+            icon: Icon(Icons.undo, color: vm.canUndo ? const Color.fromARGB(255, 188, 228, 244) : const Color.fromARGB(255, 119, 123, 182)),
             tooltip: 'Deshacer movimiento',
             onPressed: vm.canUndo ? () => context.read<PegSolitaireViewModel>().undoMove() : null,
           ),
@@ -219,7 +232,8 @@ class _PegSolitaireScreenState extends State<PegSolitaireScreen>{
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                 color: const Color.fromARGB(134, 11, 0, 20), 
                 child: Center( 
-                  child: Text('STATUS: En juego | Movimientos: ${vm.moveCount} | Piezas restantes: ${vm.remainingPegs}', 
+                  child: Text(
+                    'STATUS: En juego | Movimientos: ${vm.moveCount} | Piezas restantes: ${vm.remainingPegs}', 
                     style: const TextStyle(
                       fontWeight: FontWeight.normal,
                       fontSize: 12,

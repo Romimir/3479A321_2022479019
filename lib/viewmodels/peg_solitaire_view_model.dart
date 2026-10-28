@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart'; 
-import 'package:logger/logger.dart';
 import '../models/board_position.dart'; 
 import '../core/enums/cell_type.dart'; 
 import '../services/audio_service.dart';
@@ -7,10 +6,11 @@ import '../models/move_record.dart';
 import '../models/game_record.dart';
 import '../repositories/game_history_repository.dart';
 import '../services/preferences_services.dart';
+import '../../core/utils/app_logger.dart';
+import 'package:flutter/services.dart';
 
 class PegSolitaireViewModel extends ChangeNotifier { 
   static const int gridSize = 7; 
-  final Logger _logger = Logger();
   
   final IGameHistoryRepository? historyRepository;
   final PreferencesService? preferencesService;
@@ -150,7 +150,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
         _evaluateGameTermination(); 
         notifyListeners(); 
       } else {  
-        _logger.w('Reglas: Intento de salto inválido rechazado desde $origin hacia $pos'); 
+        AppLogger.warning('Reglas: Intento de salto inválido rechazado desde $origin hacia $pos'); 
       } 
     } 
   }
@@ -168,7 +168,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
     final int midRow = (from.row + to.row) ~/ 2; 
     final int midCol = (from.col + to.col) ~/ 2; 
     if (_board[midRow][midCol] != CellType.occupiedPeg) return false; 
-
+    HapticFeedback.selectionClick();
     return true; 
   } 
 
@@ -188,9 +188,9 @@ class PegSolitaireViewModel extends ChangeNotifier {
       to: to,
       timestamp: DateTime.now(),
     ));
-
+    HapticFeedback.mediumImpact();
     AudioService.instance.playJump();
-    _logger.i('Salto ejecutado con éxito: $from -> $to | Clavijas restantes: $_remainingPegs'); 
+    AppLogger.info('Salto ejecutado con éxito: $from -> $to | Clavijas restantes: $_remainingPegs'); 
   } 
 
   void _evaluateGameTermination() { 
@@ -198,7 +198,8 @@ class PegSolitaireViewModel extends ChangeNotifier {
       _isGameOver = true; 
       _isVictory = true; 
       AudioService.instance.playGameOver();
-      _logger.i('¡VICTORIA! Partida completada en $_moveCount movimientos.'); 
+      HapticFeedback.heavyImpact();
+      AppLogger.info('¡VICTORIA! Partida completada en $_moveCount movimientos.'); 
       _persistCompletedGame();
       return; 
     } 
@@ -206,8 +207,9 @@ class PegSolitaireViewModel extends ChangeNotifier {
     if (!_hasValidMovesRemaining()) { 
       _isGameOver = true; 
       _isVictory = false; 
+      HapticFeedback.heavyImpact();
       AudioService.instance.playGameOver();
-      _logger.w('Fin de juego por bloqueo. No existen movimientos válidos.'); 
+      AppLogger.warning('Fin de juego por bloqueo. No existen movimientos válidos.'); 
       _persistCompletedGame();
     } 
   } 
@@ -258,9 +260,9 @@ class PegSolitaireViewModel extends ChangeNotifier {
     try {
       await historyRepository?.saveGame(record);
       await preferencesService?.checkAndSaveRecord(_remainingPegs);
-      _logger.i('Resumen de la partida guardado en disco correctamente.');
+      AppLogger.info('Resumen de la partida guardado en disco correctamente.');
     } catch (e) {
-      _logger.e('Error al guardar el resumen en el repositorio: $e');
+      AppLogger.error('Error al guardar el resumen en el repositorio: $e');
     }
   }
 }

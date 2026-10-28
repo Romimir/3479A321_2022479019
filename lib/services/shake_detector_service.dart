@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/widgets.dart';
-import 'package:logger/logger.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import '../core/utils/app_logger.dart';
 
 class ShakeDetectorService {
   double shakeThreshold;
   final VoidCallback onShake;
   final Duration debounceDuration;
-  final Logger _logger = Logger();
   
   StreamSubscription<UserAccelerometerEvent>? _subscription;
   late final AppLifecycleListener _lifecycleListener;
@@ -26,11 +25,11 @@ class ShakeDetectorService {
   void _initLifecycleListener() {
     _lifecycleListener = AppLifecycleListener(
       onResume: () {
-        _logger.i('SO Resumed: Reanudando sensor de aceleración');
+        AppLogger.info('SO Resumed: Reanudando sensor de aceleración');
         startListening();
       },
       onPause: () {
-        _logger.i('SO Paused: Suspendiendo sensor para mitigar consumo de batería');
+        AppLogger.info('SO Paused: Suspendiendo sensor para mitigar consumo de batería');
         stopListening();
       },
       onDetach: () => dispose(),
@@ -53,26 +52,26 @@ class ShakeDetectorService {
           final now = DateTime.now();
           if (now.difference(_lastShakeTime) > debounceDuration) {
             _lastShakeTime = now;
-            _logger.i('¡Shake detectado! Magnitud: ${magnitude.toStringAsFixed(2)} m/s² (umbral: $shakeThreshold)');
+            AppLogger.info('¡Shake detectado! Magnitud: ${magnitude.toStringAsFixed(2)} m/s² (umbral: $shakeThreshold)');
             onShake();
           }
         }
       },
       onError: (error) {
-        _logger.e('Error en el flujo del acelerómetro: $error');
+        AppLogger.error('Error en el flujo del acelerómetro: $error');
       },
       cancelOnError: false,
     );
     
     _isListening = true;
-    _logger.i('ShakeDetectorService: Escucha activa');
+    AppLogger.info('ShakeDetectorService: Escucha activa');
   }
 
   void stopListening() {
     _subscription?.cancel();
     _subscription = null;
     _isListening = false;
-    _logger.i('ShakeDetectorService: Escucha detenida');
+    AppLogger.info('ShakeDetectorService: Escucha detenida');
   }
 
   void dispose() {
