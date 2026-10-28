@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart'; 
+import 'package:flutter/services.dart';
 import '../models/board_position.dart'; 
 import '../core/enums/cell_type.dart'; 
 import '../services/audio_service.dart';
@@ -7,13 +8,13 @@ import '../models/game_record.dart';
 import '../repositories/game_history_repository.dart';
 import '../services/preferences_services.dart';
 import '../../core/utils/app_logger.dart';
-import 'package:flutter/services.dart';
 
 class PegSolitaireViewModel extends ChangeNotifier { 
   static const int gridSize = 7; 
   
   final IGameHistoryRepository? historyRepository;
   final PreferencesService? preferencesService;
+  final AudioService? audioService;
 
   final List<MoveRecord> _movesHistory = [];
 
@@ -37,6 +38,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
   PegSolitaireViewModel({
     this.historyRepository,
     this.preferencesService,
+    this.audioService,
   }) { 
     initializeBoard(); 
   } 
@@ -121,7 +123,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
     if (_selectedPosition == null) { 
       if (tappedType == CellType.occupiedPeg) { 
         _selectedPosition = pos; 
-        AudioService.instance.playSelect();
+        audioService?.playSelect();
         notifyListeners(); 
       } 
       return; 
@@ -137,6 +139,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
 
     if (tappedType == CellType.occupiedPeg) { 
       _selectedPosition = pos; 
+      audioService?.playSelect();
       notifyListeners(); 
       return; 
     } 
@@ -168,7 +171,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
     final int midRow = (from.row + to.row) ~/ 2; 
     final int midCol = (from.col + to.col) ~/ 2; 
     if (_board[midRow][midCol] != CellType.occupiedPeg) return false; 
-    HapticFeedback.selectionClick();
+    
     return true; 
   } 
 
@@ -177,8 +180,8 @@ class PegSolitaireViewModel extends ChangeNotifier {
     final int midCol = (from.col + to.col) ~/ 2; 
 
     _board[from.row][from.col] = CellType.emptyHole;     
-    _board[midRow][midCol] = CellType.emptyHole;         
-    _board[to.row][to.col] = CellType.occupiedPeg;       
+    _board[midRow][midCol] = CellType.emptyHole;        
+    _board[to.row][to.col] = CellType.occupiedPeg;      
 
     _remainingPegs--; 
     _moveCount++; 
@@ -188,8 +191,9 @@ class PegSolitaireViewModel extends ChangeNotifier {
       to: to,
       timestamp: DateTime.now(),
     ));
+
     HapticFeedback.mediumImpact();
-    AudioService.instance.playJump();
+    audioService?.playJump();
     AppLogger.info('Salto ejecutado con éxito: $from -> $to | Clavijas restantes: $_remainingPegs'); 
   } 
 
@@ -197,7 +201,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
     if (_remainingPegs == 1) { 
       _isGameOver = true; 
       _isVictory = true; 
-      AudioService.instance.playGameOver();
+      audioService?.playGameOver();
       HapticFeedback.heavyImpact();
       AppLogger.info('¡VICTORIA! Partida completada en $_moveCount movimientos.'); 
       _persistCompletedGame();
@@ -208,7 +212,7 @@ class PegSolitaireViewModel extends ChangeNotifier {
       _isGameOver = true; 
       _isVictory = false; 
       HapticFeedback.heavyImpact();
-      AudioService.instance.playGameOver();
+      audioService?.playGameOver();
       AppLogger.warning('Fin de juego por bloqueo. No existen movimientos válidos.'); 
       _persistCompletedGame();
     } 

@@ -10,6 +10,8 @@ import '../services/preferences_services.dart';
 import 'repositories/game_history_repository.dart';
 import 'repositories/json_file_history_repository.dart';
 //import '../../core/utils/app_logger.dart';
+import '../services/audio_service.dart';
+
 
 
 Future<void> main() async {
@@ -17,12 +19,13 @@ Future<void> main() async {
 
   final preferencesService = await PreferencesService.create();
   final historyRepository = JsonFileHistoryRepository();
-
+  final audioService = AudioService.instance;
   runApp(
     MultiProvider(
       providers: [
         Provider<IGameHistoryRepository>.value(value:historyRepository),
         Provider<PreferencesService>.value(value: preferencesService),
+        Provider<AudioService>.value(value: audioService,),
       ],
       child: const MyApp(),
       ),
@@ -44,7 +47,8 @@ class MyApp extends StatelessWidget {
        '/game': (context) => ChangeNotifierProvider<PegSolitaireViewModel>(
         create: (_) => PegSolitaireViewModel(
           historyRepository: context.read<IGameHistoryRepository>(),
-          preferencesService: context.read<PreferencesService>(),  
+          preferencesService: context.read<PreferencesService>(),
+          audioService: context.read<AudioService>(),
         ),
         child: const PegSolitaireScreen(),
        ), 
