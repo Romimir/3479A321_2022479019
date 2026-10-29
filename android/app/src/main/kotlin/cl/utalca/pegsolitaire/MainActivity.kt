@@ -1,4 +1,4 @@
-package com.example.lab1
+package cl.utalca.pegsolitaire
 
 import io.flutter.embedding.android.FlutterActivity
 
